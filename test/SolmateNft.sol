@@ -8,6 +8,7 @@ contract SolmateNftTests is Test {
     using stdStorage for StdStorage;
 
     SolmateNft private nft;
+    address private constant TEST_ADDRESS = address(65536+1); // use first non-system address
 
     function setUp() public {
         // Deploy NFT contract
@@ -15,11 +16,11 @@ contract SolmateNftTests is Test {
     }
 
     function testFailNoMintPricePaid() public {
-        nft.mintTo(address(1));
+        nft.mintTo(TEST_ADDRESS);
     }
 
     function testMintPricePaid() public {
-        nft.mintTo{value: 0.08 ether}(address(1));
+        nft.mintTo{value: 0.08 ether}(TEST_ADDRESS);
     }
 
     function testFailMaxSupplyReached() public {
@@ -27,7 +28,7 @@ contract SolmateNftTests is Test {
         bytes32 loc = bytes32(slot);
         bytes32 mockedCurrentTokenId = bytes32(abi.encode(10000));
         vm.store(address(nft), loc, mockedCurrentTokenId);
-        nft.mintTo{value: 0.08 ether}(address(1));
+        nft.mintTo{value: 0.08 ether}(TEST_ADDRESS);
     }
 
     function testFailMintToZeroAddress() public {
@@ -35,7 +36,7 @@ contract SolmateNftTests is Test {
     }
 
     function testNewMintOwnerRegistered() public {
-        nft.mintTo{value: 0.08 ether}(address(1));
+        nft.mintTo{value: 0.08 ether}(TEST_ADDRESS);
         uint256 slotOfNewOwner = stdstore
             .target(address(nft))
             .sig(nft.ownerOf.selector)
@@ -43,21 +44,21 @@ contract SolmateNftTests is Test {
             .find();
 
         uint160 ownerOfTokenIdOne = uint160(uint256((vm.load(address(nft),bytes32(abi.encode(slotOfNewOwner))))));
-        assertEq(address(ownerOfTokenIdOne), address(1));
+        assertEq(address(ownerOfTokenIdOne), TEST_ADDRESS);
     }
 
     function testBalanceIncremented() public { 
-        nft.mintTo{value: 0.08 ether}(address(1));
+        nft.mintTo{value: 0.08 ether}(TEST_ADDRESS);
         uint256 slotBalance = stdstore
             .target(address(nft))
             .sig(nft.balanceOf.selector)
-            .with_key(address(1))
+            .with_key(TEST_ADDRESS)
             .find();
         
         uint256 balanceFirstMint = uint256(vm.load(address(nft), bytes32(slotBalance)));
         assertEq(balanceFirstMint, 1);
 
-        nft.mintTo{value: 0.08 ether}(address(1));
+        nft.mintTo{value: 0.08 ether}(TEST_ADDRESS);
         uint256 balanceSecondMint = uint256(vm.load(address(nft), bytes32(slotBalance)));
         assertEq(balanceSecondMint, 2);
     }
@@ -76,8 +77,8 @@ contract SolmateNftTests is Test {
     }
     
     function testFailUnSafeContractReceiver() public {
-        vm.etch(address(1), bytes("mock code"));
-        nft.mintTo{value: 0.08 ether}(address(1));
+        vm.etch(TEST_ADDRESS, hex"0000000000000000000000000000000000000000000000000000000000000000");
+        nft.mintTo{value: 0.08 ether}(TEST_ADDRESS);
     }
 }
 
